@@ -1,3 +1,20 @@
+"""
+from flask import Flask
+from markupsafe import escape
+
+app = Flask(__name__)
+
+@app.route("/")
+def hello_world():
+    return "<p>Hello, World!</p>"
+
+
+
+@app.route('/send_message/<message>')
+def send_message(message):
+    # show the user profile for that user
+    return f'Message: {escape(message)}'
+"""
 
 from flask import Flask
 from markupsafe import escape
@@ -46,8 +63,9 @@ for i in Gnodes:
             vnodes.append(i)
             """
             full_label = G.nodes()[i]['label']
-            if 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
-                #if True:
+            #if 'neuromere' not in full_label and 'thorax' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+            #if 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+            if True:
                 if len(G.nodes()[i]['definition'])>0:
                     # defsents = G.nodes()[i]['definition'].split('. ')
                     labels = G.nodes()[i]['label'].replace('/',' or ')
@@ -81,10 +99,10 @@ document_store = InMemoryDocumentStore()
 document_store.write_documents(data_dicts)
 
 
-# retriever = TfidfRetriever(document_store=document_store)
-# retriever = ElasticsearchRetriever(document_store)
+retriever = TfidfRetriever(document_store=document_store)
+# retriever = ElasticsearchRetriever(document_store=document_store)
 
-
+"""
 retriever = DensePassageRetriever(document_store=document_store,
                                   query_embedding_model="facebook/dpr-question_encoder-single-nq-base",
                                   passage_embedding_model="facebook/dpr-ctx_encoder-single-nq-base",
@@ -95,7 +113,7 @@ retriever = DensePassageRetriever(document_store=document_store,
                                   embed_title=True,
                                   use_fast_tokenizers=True)
 document_store.update_embeddings(retriever)
-
+"""
 
 
 
@@ -105,6 +123,11 @@ reader = FARMReader(model_name_or_path="microsoft/BiomedNLP-PubMedBERT-base-unca
 pipe = ExtractiveQAPipeline(reader, retriever)
 
 # prediction = pipe.run(query="what are adult Drosophila descending neuron subtypes", top_k_retriever=10, top_k_reader=10)
+gloms = ['VP5', 'VP4', 'VP3', 'VP2', 'VP1m', 'VP1l', 'VP1d', 'VM7v', 'VM7d', 'VM5v', 'VM5d', 'VM4', 'VM3', 'VM2', 'VM1', 'VL2p', 'VL2a', 'VL1', 'VC5', 'VC4', 'VC3m', 'VC3l', 'VC2', 'VC1', 'VA7m', 'VA7l', 'VA6', 'VA5', 'VA4', 'VA3', 'VA2', 'VA1v', 'VA1d', 'V', 'DP1m', 'DP1l', 'DM6', 'DM5', 'DM4', 'DM3', 'DM2', 'DM1', 'DL5', 'DL4', 'DL3', 'DL2v', 'DL2d', 'DL1', 'DC4', 'DC3', 'DC2', 'DC1', 'DA4m', 'DA4l', 'DA3', 'DA2', 'DA1', 'D']
+compartments = []
+mb_cell_types = ['PPL1','PPL101','PPL102','PPL103','PPL104','PPL105','PPL106','PPL107','PPL108']
+domain_keywords = gloms + mb_cell_types
+
 
 
 
@@ -126,19 +149,54 @@ class QueryEngine:
             q = x.replace("!ask ","")
             
             # Neural query finder:
-            prediction = pipe.run(query=q, top_k_retriever=10, top_k_reader=8)
+            prediction = pipe.run(query=q, top_k_retriever=10, top_k_reader=10)
             uj = 1
             mes = ''
             # mes = 'Drosobot Response: '
             # self.send_message(mes)
+
+            ## Keyword Match Parser
+            found_answers = []
+            keyword_matches = {}
+            for domain_keyword in domain_keywords:
+                if domain_keyword+' ' in q or domain_keyword+'/' in q or q.endswith(domain_keyword):
+                    print('Found Domain Keyword:', domain_keyword)
+                    for name in G.nodes():
+                        if domain_keyword in G.nodes()[name]['label']:
+                            # keyword_matches.append(name)
+                            if name not in found_answers:
+                                if len(list(nx.descendants(Gvis,name)))>0:
+                                    full_label = G.nodes()[name]['label']
+                                    if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+                                        found_answers.append(name)
+                                        print('Keyword Match Response:', G.nodes()[name]['label'])
+                                        mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a target="_blank" href='""" + name + """'>""" + name + '</a>)'
+                                        # self.send_message(mes)
+                                        ujk = uj
+                                        if 'patchy' in full_label:
+                                            ujk = 100
+                                        mes += """ <p></p><a id='plusplusresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!visualize """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Add to Workspace</a>"""
+                                        mes += '\n *' + G.nodes()[name]['definition'] + '*'
+                                        # self.send_message(mes)
+                                        uj += 1
+            # Neural Match Parser
             for i in prediction['answers']:
-                if i['score']>0.7:
+                if i['score']>0.00:
                     name = i['meta']
-                    mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a class="drosobotTag" onclick="window.plusplusSearch('!visualize """ + name + """')">""" + name + '</a>)'
-                    # self.send_message(mes)
-                    mes += '\n *' + G.nodes()[name]['definition'] + '*'
-                    # self.send_message(mes)
-                    uj += 1
+                    if name not in found_answers:
+                        if len(list(nx.descendants(Gvis,name)))>0:
+                            full_label = G.nodes()[name]['label']
+                            if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+                                found_answers.append(name)
+                                mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a target="_blank" href='""" + name + """'>""" + name + '</a>)'
+                                # self.send_message(mes)
+                                ujk = uj
+                                if 'patchy' in full_label:
+                                    ujk = 100
+                                mes += """ <p></p><a id='plusplusresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!visualize """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Add to Workspace</a>"""
+                                mes += '\n *' + G.nodes()[name]['definition'] + '*'
+                                # self.send_message(mes)
+                                uj += 1
             # self.send_message(mes)
             self.prediction = prediction
             print('Prediction Details:')
@@ -154,7 +212,7 @@ class QueryEngine:
                     answer = 'Drosobot Response: '
                     answer += '\n[Generated NeuroNLP Tag](https://hemibrain12.neuronlp.fruitflybrain.org/?query=add%20/:referenceId:[' + ',%20'.join(nodes) + '])'
                     # self.send_message(answer)
-                    return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
+                    # return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
                     return return_struct
                 else:
                     return return_struct
@@ -168,7 +226,7 @@ class QueryEngine:
                     nodes = nodes[:200]
                     answer = 'Drosobot Response: '
                     answer += '\n[Generated NeuroNLP Tag](https://hemibrain12.neuronlp.fruitflybrain.org/?query=add%20/:referenceId:[' + ',%20'.join(nodes) + '])'
-                    return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
+                    # return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
                     return return_struct
                 else:
                     return return_struct
@@ -254,31 +312,6 @@ class QueryEngine:
                 return return_struct
                     
 engine = QueryEngine()
-"""
-def send_gitter_message(*x):
-    x = ' '.join([str(i) for i in x])
-    print('Sending message:', x)
-    gitter.messages.send('mkturkcan/chatbot', x)
-engine.send_message = send_gitter_message
-print('Query Engine Setup complete.')
-import time
-try:
-    while True:
-        try:
-            last_message = gitter.messages.list('mkturkcan/chatbot')[-1]['text']
-            a = engine.query_interpreter(last_message)
-        except:
-            gitter = GitterClient('92694476870ad4cefcea8a75ce69d2d1432b13b2')
-
-            # Check_my id
-            print('id:', gitter.auth.get_my_id)
-
-            gitter.rooms.join('mkturkcan/chatbot')
-            pass
-        time.sleep(5)
-except KeyboardInterrupt:
-    pass
-"""
 app = Flask(__name__)
 
 @app.route("/")

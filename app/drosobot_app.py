@@ -126,7 +126,7 @@ pipe = ExtractiveQAPipeline(reader, retriever)
 gloms = ['VP5', 'VP4', 'VP3', 'VP2', 'VP1m', 'VP1l', 'VP1d', 'VM7v', 'VM7d', 'VM5v', 'VM5d', 'VM4', 'VM3', 'VM2', 'VM1', 'VL2p', 'VL2a', 'VL1', 'VC5', 'VC4', 'VC3m', 'VC3l', 'VC2', 'VC1', 'VA7m', 'VA7l', 'VA6', 'VA5', 'VA4', 'VA3', 'VA2', 'VA1v', 'VA1d', 'V', 'DP1m', 'DP1l', 'DM6', 'DM5', 'DM4', 'DM3', 'DM2', 'DM1', 'DL5', 'DL4', 'DL3', 'DL2v', 'DL2d', 'DL1', 'DC4', 'DC3', 'DC2', 'DC1', 'DA4m', 'DA4l', 'DA3', 'DA2', 'DA1', 'D']
 compartments = []
 mb_cell_types = ['PPL1','PPL101','PPL102','PPL103','PPL104','PPL105','PPL106','PPL107','PPL108']
-domain_keywords = gloms + mb_cell_types
+domain_keywords = gloms + mb_cell_types + ['Feedback Loop', 'Feedback']
 
 
 
@@ -235,7 +235,9 @@ class QueryEngine:
         if x.startswith("!visualize "):
             
             q = x.replace("!visualize ","")
+            print('Visualization Request:', q)
             if q in Gvisnodes:
+                print('Visualization Request was in the graph.')
                 nodes = [i for i in list(nx.descendants(Gvis,q)) if i.isnumeric()][:100]
                 if len(nodes)>0:
                     answer = 'Drosobot Response: '
@@ -312,6 +314,7 @@ class QueryEngine:
                 return return_struct
                     
 engine = QueryEngine()
+
 app = Flask(__name__)
 
 @app.route("/")

@@ -1,26 +1,9 @@
-"""
-from flask import Flask
-from markupsafe import escape
-
-app = Flask(__name__)
-
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
-
-
-
-@app.route('/send_message/<message>')
-def send_message(message):
-    # show the user profile for that user
-    return f'Message: {escape(message)}'
-"""
-
 from flask import Flask
 from markupsafe import escape
 from flask.ext.jsonpify import jsonify
 
-
+import numpy as np
+import json
 import networkx as nx
 from haystack.preprocessor.cleaning import clean_wiki_text
 from haystack.preprocessor.utils import convert_files_to_dicts, fetch_archive_from_http
@@ -33,7 +16,6 @@ from haystack.retriever.sparse import TfidfRetriever
 from haystack.pipeline import ExtractiveQAPipeline
 from haystack.retriever import ElasticsearchRetriever
 
-import numpy as np
 
 G = nx.read_gexf('GD_augmented.gexf')
 Gnodes = list(G.nodes())
@@ -126,7 +108,7 @@ pipe = ExtractiveQAPipeline(reader, retriever)
 gloms = ['VP5', 'VP4', 'VP3', 'VP2', 'VP1m', 'VP1l', 'VP1d', 'VM7v', 'VM7d', 'VM5v', 'VM5d', 'VM4', 'VM3', 'VM2', 'VM1', 'VL2p', 'VL2a', 'VL1', 'VC5', 'VC4', 'VC3m', 'VC3l', 'VC2', 'VC1', 'VA7m', 'VA7l', 'VA6', 'VA5', 'VA4', 'VA3', 'VA2', 'VA1v', 'VA1d', 'V', 'DP1m', 'DP1l', 'DM6', 'DM5', 'DM4', 'DM3', 'DM2', 'DM1', 'DL5', 'DL4', 'DL3', 'DL2v', 'DL2d', 'DL1', 'DC4', 'DC3', 'DC2', 'DC1', 'DA4m', 'DA4l', 'DA3', 'DA2', 'DA1', 'D']
 compartments = []
 mb_cell_types = ['PPL1','PPL101','PPL102','PPL103','PPL104','PPL105','PPL106','PPL107','PPL108']
-domain_keywords = gloms + mb_cell_types + ['Feedback Loop', 'Feedback']
+domain_keywords = gloms + mb_cell_types + ['Global Feedback', 'Feedback Loop', 'feedback loop', 'Feedback', 'patchy'] + ['antennal lobe local neuron']
 
 
 
@@ -149,7 +131,7 @@ class QueryEngine:
             q = x.replace("!ask ","")
             
             # Neural query finder:
-            prediction = pipe.run(query=q, top_k_retriever=10, top_k_reader=10)
+            prediction = pipe.run(query=q, top_k_retriever=30, top_k_reader=30)
             uj = 1
             mes = ''
             # mes = 'Drosobot Response: '
@@ -158,6 +140,15 @@ class QueryEngine:
             ## Keyword Match Parser
             found_answers = []
             keyword_matches = {}
+            glom_found = False
+            for i in gloms:
+                if i in q:
+                    glom_found = True
+            if 'feedback loop' in q and glom_found == False:
+                q = q.replace('feedback loop', 'Global Feedback ')
+            if 'antennal lobe' in q and 'local neuron' in q:
+                q = q + ' ' + 'antennal lobe local neuron'
+
             for domain_keyword in domain_keywords:
                 if domain_keyword+' ' in q or domain_keyword+'/' in q or q.endswith(domain_keyword):
                     print('Found Domain Keyword:', domain_keyword)
@@ -167,7 +158,7 @@ class QueryEngine:
                             if name not in found_answers:
                                 if len(list(nx.descendants(Gvis,name)))>0:
                                     full_label = G.nodes()[name]['label']
-                                    if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+                                    if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla ' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
                                         found_answers.append(name)
                                         print('Keyword Match Response:', G.nodes()[name]['label'])
                                         mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a target="_blank" href='""" + name + """'>""" + name + '</a>)'
@@ -176,6 +167,8 @@ class QueryEngine:
                                         if 'patchy' in full_label:
                                             ujk = 100
                                         mes += """ <p></p><a id='plusplusresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!visualize """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Add to Workspace</a>"""
+                                        mes += """<a id='plusplusbresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!pin """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Pin</a>"""
+                                        mes += """<a id='pluspluscresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!unpin """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Unpin</a>"""
                                         mes += '\n *' + G.nodes()[name]['definition'] + '*'
                                         # self.send_message(mes)
                                         uj += 1
@@ -186,7 +179,7 @@ class QueryEngine:
                     if name not in found_answers:
                         if len(list(nx.descendants(Gvis,name)))>0:
                             full_label = G.nodes()[name]['label']
-                            if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+                            if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla ' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
                                 found_answers.append(name)
                                 mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a target="_blank" href='""" + name + """'>""" + name + '</a>)'
                                 # self.send_message(mes)
@@ -194,6 +187,8 @@ class QueryEngine:
                                 if 'patchy' in full_label:
                                     ujk = 100
                                 mes += """ <p></p><a id='plusplusresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!visualize """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Add to Workspace</a>"""
+                                mes += """<a id='plusplusbresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!pin """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Pin</a>"""
+                                mes += """<a id='pluspluscresult"""+ str(ujk) + """' onclick="window.plusplusSearch('!unpin """ + name + """')" class="info-try btn btn-xs"><i class="fa fa-angle-double-right" aria-hidden="true"></i> Unpin</a>"""
                                 mes += '\n *' + G.nodes()[name]['definition'] + '*'
                                 # self.send_message(mes)
                                 uj += 1
@@ -232,9 +227,16 @@ class QueryEngine:
                     return return_struct
             
             return return_struct
-        if x.startswith("!visualize "):
-            
+        if x.startswith("!visualize ") or x.startswith("!pin ") or x.startswith("!unpin "):
+            if x.startswith("!pin "):
+                mode = 'pin'
+            elif x.startswith("!unpin "):
+                mode = 'unpin'
+            else:
+                mode = 'show'
             q = x.replace("!visualize ","")
+            q = q.replace("!pin ","")
+            q = q.replace("!unpin ","")
             print('Visualization Request:', q)
             if q in Gvisnodes:
                 print('Visualization Request was in the graph.')
@@ -244,6 +246,10 @@ class QueryEngine:
                     answer += '\n[Generated NeuroNLP Tag](https://hemibrain12.neuronlp.fruitflybrain.org/?query=add%20/:referenceId:[' + ',%20'.join(nodes) + '])'
                     # self.send_message(answer)
                     return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
+                    if mode == 'pin':
+                        return_struct['query'] = return_struct['query'].replace('add ','pin ')
+                    if mode == 'unpin':
+                        return_struct['query'] = return_struct['query'].replace('add ','unpin ')
                     return return_struct
                 else:
                     answer = 'Drosobot Response: '
@@ -265,6 +271,8 @@ class QueryEngine:
                     answer += '\n[Generated NeuroNLP Tag](https://hemibrain12.neuronlp.fruitflybrain.org/?query=add%20/:referenceId:[' + ',%20'.join(nodes) + '])'
                     # self.send_message(answer)
                     return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
+                    if mode == 'pin':
+                        return_struct['query'] = return_struct['query'].replace('add ','pin ')
                     return return_struct
                 else:
                     # self.send_message('This node was not found in the database.')
@@ -276,13 +284,10 @@ class QueryEngine:
             if self.prediction is not None:
                 q = self.prediction['answers'][0]['meta']
                 if q in Gvisnodes:
-                    # print(i, q)
-                    # print([G.nodes()[i]['label'] for i in list(nx.descendants(Gvis,q)) if i.isnumeric()])
                     nodes = [i for i in list(nx.descendants(Gvis,q)) if i.isnumeric()][:200]
                     if len(nodes)>0:
                         answer = 'Drosobot Response: '
                         answer += '\n[Generated NeuroNLP Tag](https://hemibrain12.neuronlp.fruitflybrain.org/?query=add%20/:referenceId:[' + ',%20'.join(nodes) + '])'
-                        # self.send_message(answer)
                         return_struct['query'] = 'add /:referenceId:[' + ', '.join(nodes) + '])'
                         return return_struct
                     else:
@@ -322,21 +327,11 @@ def hello_world():
     return "<p>Hello, welcome to Drosobot!</p>"
 
 
-import json
 
 
 @app.route('/send_message/<message>')
 def send_message(message):
-    # show the user profile for that user
     output = engine.query_interpreter(str(escape(message)))
     if output is None:
         output = {'message': '', 'query': '', 'warning': ''}
-    # output = {}
-    # output['response'] = str(a)
-    # output['kind'] = 'drosobot'
     return jsonify(kind='drosobot', message=output['message'], query=output['query'], warning=output['warning'])
-    # return json.dumps(output)
-
-# !ask What are descending neurons?
-# !visualize descending neuron
-# !visualize vpoEN

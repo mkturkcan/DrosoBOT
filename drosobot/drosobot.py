@@ -5,7 +5,7 @@ import networkx as nx
 from haystack.reader.farm import FARMReader
 from haystack.document_stores.memory import InMemoryDocumentStore
 from haystack.retriever.sparse import TfidfRetriever
-from haystack.pipeline import ExtractiveQAPipeline
+from haystack.pipelines import ExtractiveQAPipeline
 
 class QueryEngine:
     def __init__(self):
@@ -13,7 +13,7 @@ class QueryEngine:
         self.last_query = None
         self.send_message = print
 
-    def prepare(self):
+    def prepare(self, num_processes = None):
         path = pathlib.Path(__file__).parent.resolve()
         G = nx.read_gexf(pathlib.PurePath(path, '../data', 'GD_augmented.gexf'))
         Gnodes = list(G.nodes())
@@ -78,15 +78,13 @@ class QueryEngine:
                                     sentences.append(jk)
                                     vnodes.append(i)
                     
-
-
         document_store = InMemoryDocumentStore()
         document_store.write_documents(data_dicts)
 
 
         retriever = TfidfRetriever(document_store=document_store)
         reader = FARMReader(model_name_or_path="microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext",
-                            use_gpu=True)
+                            use_gpu=True, num_processes = num_processes)
         self.pipe = ExtractiveQAPipeline(reader, retriever)
 
         # prediction = pipe.run(query="what are adult Drosophila descending neuron subtypes", top_k_retriever=10, top_k_reader=10)
@@ -94,6 +92,7 @@ class QueryEngine:
         self.compartments = []
         self.mb_cell_types = ['PPL1','PPL101','PPL102','PPL103','PPL104','PPL105','PPL106','PPL107','PPL108']
         self.domain_keywords = self.gloms + self.mb_cell_types + ['Global Feedback', 'Feedback Loop', 'feedback loop', 'Feedback', 'patchy'] + ['antennal lobe local neuron']
+        self.labels_to_avoid = ['thoracic', 'primordium', 'adult mushroom body/', 'columnar neuron', 'centrifugal neuron C', 'lamina', 'medulla ','anastomosis', 'GC', 'larva', 'glia', 'abdom', 'embry', 'blast', 'fiber']
 
     def query_interpreter(self, x):
         return_struct = {'message': [], 'query': '', 'warning': ''}
@@ -138,7 +137,7 @@ class QueryEngine:
                             if name not in found_answers:
                                 if len(list(nx.descendants(self.Gvis,name)))>0:
                                     full_label = G.nodes()[name]['label']
-                                    if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla ' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+                                    if all(n not in full_label for n in self.labels_to_avoid):
                                         found_answers.append(name)
                                         print('Keyword Match Response:', G.nodes()[name]['label'])
                                         # mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a target="_blank" href='""" + name + """'>""" + name + '</a>)'
@@ -163,7 +162,7 @@ class QueryEngine:
                     if name not in found_answers:
                         if len(list(nx.descendants(self.Gvis,name)))>0:
                             full_label = G.nodes()[name]['label']
-                            if 'thoracic' not in full_label and 'primordium' not in full_label and 'adult mushroom body/' not in full_label and 'columnar neuron' not in full_label and 'centrifugal neuron C' not in full_label and 'lamina' not in full_label and 'medulla ' not in full_label and 'anastomosis' not in full_label and 'GC' not in full_label and 'larva' not in full_label and 'glia' not in full_label and 'abdom' not in full_label and 'embry' not in full_label and 'blast' not in full_label and 'fiber' not in full_label:
+                            if all(n not in full_label for n in self.labels_to_avoid):
                                 found_answers.append(name)
                                 # mes += '\n **' + str(uj)+'.' + G.nodes()[name]['label'] + """** (<a target="_blank" href='""" + name + """'>""" + name + '</a>)'
                                 ujk = uj

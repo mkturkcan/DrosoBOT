@@ -1,10 +1,14 @@
+# Flask imports
 from flask import Flask
 from markupsafe import escape
 from flask.ext.jsonpify import jsonify
 
-import numpy as np
+# General imports
 import json
+import numpy as np
 import networkx as nx
+
+# Haystack imports
 from haystack.preprocessor.cleaning import clean_wiki_text
 from haystack.preprocessor.utils import convert_files_to_dicts, fetch_archive_from_http
 from haystack.reader.farm import FARMReader
@@ -16,11 +20,16 @@ from haystack.retriever.sparse import TfidfRetriever
 from haystack.pipeline import ExtractiveQAPipeline
 from haystack.retriever import ElasticsearchRetriever
 
+TO_DEBUG = False # Debug mode flag
+RETRIEVER = 'elasticsearch' # Retriever type: either 'tfidf', 'elasticsearch' or 'dpr'
+
 
 G = nx.read_gexf('GD_augmented.gexf')
 Gnodes = list(G.nodes())
-print('First few ontology nodes:', Gnodes[:5])
-print('Sample node details:', G.nodes()['http://flybase.org/reports/FBgn0000137'])
+
+if TO_DEBUG:
+    print('First few ontology nodes:', Gnodes[:5])
+    print('Sample node details:', G.nodes()['http://flybase.org/reports/FBgn0000137'])
 
 label_dict = {}
 for i in G.nodes():

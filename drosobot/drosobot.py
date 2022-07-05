@@ -24,7 +24,7 @@ class QueryEngine:
         self.domain_keywords = self.gloms + self.mb_cell_types + ['Global Feedback', 'Feedback Loop', 'feedback loop', 'Feedback', 'patchy'] + ['antennal lobe local neuron'] + ['period']
         ## Some search terms are not relevant to the adult Drosophila domain in the context of
         ## the hemibrain dataset
-        self.labels_to_avoid = ['thoracic', 'primordium', 'adult mushroom body/', 'columnar neuron', 'centrifugal neuron C', 'lamina', 'medulla ','anastomosis', 'GC', 'larva', 'glia', 'abdom', 'embry', 'blast', 'fiber']
+        self.labels_to_avoid = ['thoracic', 'primordium', 'adult mushroom body/', 'columnar neuron', 'centrifugal neuron C', 'lamina', 'medulla ','anastomosis', 'GC', 'larva', 'glia', 'abdom', 'embry', 'blast', 'fiber', 'pupa', 'prepupa', 'protein']
 
         self.data_path = '../data'
         self.retriever_top_k = 30
@@ -160,6 +160,30 @@ class QueryEngine:
                                                'definition': G.nodes()[name]['definition']}
                                         message.append(mes)
                                         uj += 1
+            for domain_keyword in self.domain_keywords:
+                if domain_keyword+' ' in q or domain_keyword+'/' in q or q.endswith(domain_keyword):
+                    if self.to_debug:
+                        print('Found Domain Keyword:', domain_keyword)
+                    for name in G.nodes():
+                        if 'definition' in G.nodes()[name]:
+                            if domain_keyword in G.nodes()[name]['definition']:
+                                if name not in found_answers: # prevent duplicates
+                                    if len(list(nx.descendants(self.Gvis,name)))>0: # only if this node has corresponding neurons in the dataset
+                                        full_label = G.nodes()[name]['label']
+                                        if all(n not in full_label for n in self.labels_to_avoid): # check against labels to avoid
+                                            found_answers.append(name)
+                                            if self.to_debug:
+                                                print('Keyword Match Response:', G.nodes()[name]['label'])
+                                            ujk = uj
+                                            if 'patchy' in full_label:
+                                                ujk = 100
+                                            mes = {'label': G.nodes()[name]['label'],
+                                                'name': name,
+                                                'link_id': ujk,
+                                                'entry': uj,
+                                                'definition': G.nodes()[name]['definition']}
+                                            message.append(mes)
+                                            uj += 1
             # Neural Match Parser
             for i in prediction['answers']:
                 if i.score>0.00:

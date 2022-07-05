@@ -14,13 +14,13 @@ from setuptools import find_packages
 from setuptools import setup
 
 NAME =               'drosobot'
-VERSION =            '0.1.0'
-AUTHOR =             'M. K. Turkcan'
-AUTHOR_EMAIL =       ''
-URL =                ''
-MAINTAINER =         ''
-MAINTAINER_EMAIL =   ''
-DESCRIPTION =        ''
+VERSION =            '1.0.0'
+AUTHOR =             'Mehmet K. Turkcan'
+AUTHOR_EMAIL =       'mehmetkeremturkcan@gmail.com'
+URL =                'https://keremturkcan.com/'
+MAINTAINER =         'Mehmet K. Turkcan'
+MAINTAINER_EMAIL =   'mehmetkeremturkcan@gmail.com'
+DESCRIPTION =        'A natural language query engine for Drosophila datasets.'
 LONG_DESCRIPTION =   DESCRIPTION
 DOWNLOAD_URL =       URL
 LICENSE =            'MIT'

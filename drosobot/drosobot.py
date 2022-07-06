@@ -21,7 +21,7 @@ class QueryEngine:
         ## Cell types in the mushroom body
         self.mb_cell_types = ['PPL1','PPL101','PPL102','PPL103','PPL104','PPL105','PPL106','PPL107','PPL108']
         ## Well-known standard keywords for the Drosophila domain; if the user query contains any of these keywords, direct keyword matches are included in the search results
-        self.domain_keywords = self.gloms + self.mb_cell_types + ['Global Feedback', 'Feedback Loop', 'feedback loop', 'Feedback', 'patchy'] + ['antennal lobe local neuron'] + ['period']
+        self.domain_keywords = self.gloms + self.mb_cell_types + ['Global Feedback', 'Feedback Loop', 'feedback loop', 'Feedback', 'patchy'] + ['antennal lobe local neuron'] + ['period', 'doublesex']
         ## Some search terms are not relevant to the adult Drosophila domain in the context of
         ## the hemibrain dataset
         self.labels_to_avoid = ['thoracic', 'primordium', 'adult mushroom body/', 'columnar neuron', 'centrifugal neuron C', 'lamina', 'medulla ','anastomosis', 'GC', 'larva', 'glia', 'abdom', 'embry', 'blast', 'fiber', 'pupa', 'prepupa', 'protein']
@@ -136,6 +136,10 @@ class QueryEngine:
                 q = q.replace('period', ' period Period ')
             if 'Period' in q:
                 q = q.replace('Period', ' period Period ')
+            if 'doublesex' in q:
+                q = q.replace('doublesex', ' doublesex Doublesex ')
+            if 'Doublesex' in q:
+                q = q.replace('Doublesex', ' doublesex Doublesex ')
             # Keyword Match Parser
             for domain_keyword in self.domain_keywords:
                 if domain_keyword+' ' in q or domain_keyword+'/' in q or q.endswith(domain_keyword):

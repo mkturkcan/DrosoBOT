@@ -58,5 +58,5 @@ if __name__ == "__main__":
         include_package_data = True,
         install_requires = [
             'networkx>=2.4',
-            'farm-haystack @ git+https://github.com/deepset-ai/haystack'],
+            'farm-haystack <= 1.12.0'],
     )

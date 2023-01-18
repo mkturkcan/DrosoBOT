@@ -58,5 +58,5 @@ if __name__ == "__main__":
         include_package_data = True,
         install_requires = [
             'networkx>=2.4',
-            'farm-haystack <= 1.12.0'],
+            'farm-haystack <= 1.8.0'],
     )

@@ -96,7 +96,7 @@ class QueryEngine:
 
 
         retriever = TfidfRetriever(document_store=document_store)
-        reader = FARMReader(model_name_or_path="microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext",
+        reader = FARMReader(model_name_or_path="microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext",
                             use_gpu=True, num_processes = num_processes)
         self.pipe = ExtractiveQAPipeline(reader, retriever)
 
